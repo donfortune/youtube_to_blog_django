@@ -10,10 +10,13 @@ def all_blogs(request):
 def blog_details(request):
     return render(request, 'blog-details.html')
 
-def login(request):
+def user_login(request):
     return render(request, 'login.html')
 
-def signup(request):
+def user_logout(request):
+    return render(request, 'login.html')
+
+def user_signup(request):
     return render(request, 'signup.html')
 
 
