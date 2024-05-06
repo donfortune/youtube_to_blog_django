@@ -9,7 +9,7 @@ from django.conf import settings
 from pytube import YouTube
 import assemblyai as aai
 import os
-
+import openai
 # Create your views here.
 @login_required(login_url='/login/')
 def home(request):
@@ -21,12 +21,15 @@ def generate_blog(request):
         data = json.loads(request.body)
         yt_link = data['link']
         get_title_vid(yt_link)
-        get_transciption(yt_link)
-        if not get_transciption(yt_link):
+        transcription = get_transciption(yt_link)
+        if not transcription:
             return JsonResponse({'error': 'No transcript found'})
+        blog = generate_blog_transcription(transcription)
+        if not blog:
+            return JsonResponse({'error': 'No blog generated'})
        
-        return JsonResponse({'content': get_title_vid})
-        print(transcript)
+        return JsonResponse({'content': blog})
+        #print(transcript)
     else:
         return JsonResponse({'error': 'Invalid request method'})
 
@@ -52,6 +55,18 @@ def get_transciption(link):
     transcriber = aai.Transcriber()
     transcript = transcriber.transcribe(audio_file)
     return transcript.text
+
+def generate_blog_transcription(transcript):
+    openai.api_key = "sk-proj-nJWvlG7SPhEdOFngF6uGT3BlbkFJQTZ5b07EwTehMjNnSIAC"
+    prompt = f"Based on the following transcript from a YouTube video, write a comprehensive blog article, write it based on the transcript, but dont make it look like a youtube video, make it look like a proper blog article:\n\n{transcript}\n\nArticle:"
+    response = openai.Completion.create(
+        model="gpt-3.5-turbo", 
+        prompt=prompt, 
+        max_tokens=1000)
+
+    generated_blog = response.choices[0].text.strip()
+    return generated_blog
+
   
 
     # use open ai to generate blog
