@@ -5,8 +5,10 @@ from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse
 import json
+from django.conf import settings
 from pytube import YouTube
 import assemblyai as aai
+import os
 
 # Create your views here.
 @login_required(login_url='/login/')
@@ -19,6 +21,9 @@ def generate_blog(request):
         data = json.loads(request.body)
         yt_link = data['link']
         get_title_vid(yt_link)
+        get_transciption(yt_link)
+        if not get_transciption(yt_link):
+            return JsonResponse({'error': 'No transcript found'})
        
         return JsonResponse({'content': get_title_vid})
         print(transcript)
@@ -28,16 +33,25 @@ def generate_blog(request):
     # get yt video title
 def get_title_vid(link):
     yt = YouTube(link)
-    yt_title = yt.yt_title
+    title = yt.title
     return title
 
 def download_audio(link):
     yt = YouTube(link)
     video = yt.streams.get_audio_only()
     output = video.download(output_path=settings.MEDIA_ROOT)
+    base, ext = os.path.splitext(output)
+    new_file = base + '.mp3'
+    os.rename(output, new_file)
+    return new_file
     # get transcript from yt video using assemblyai
 def get_transciption(link):
-    pass
+    audio_file = download_audio(link)
+    aai.settings.api_key = "6d50304a25eb4cfbaf35c6165f3e09eb"
+
+    transcriber = aai.Transcriber()
+    transcript = transcriber.transcribe(audio_file)
+    return transcript.text
   
 
     # use open ai to generate blog
